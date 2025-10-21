@@ -21,9 +21,9 @@ jobs:
         aws-region: us-east-1
 
     - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v1
+      uses: hashicorp/setup-terraform@v3
       with:
-        terraform_version: 1.0.0
+        terraform_version: 1.13.4
 
     - name: Terraform Init
       working-directory: tf
