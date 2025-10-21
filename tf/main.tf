@@ -81,7 +81,7 @@ resource "aws_lambda_function" "auto" {
   filename         = data.archive_file.lambda_func.output_path
   function_name    = "auto_lambda"
   role             = aws_iam_role.lambda_vpc_role.arn
-  handler          = "auto_lambda.handler"
+  handler          = "lambda_function.lambda_handler"
   source_code_hash = data.archive_file.lambda_func.output_base64sha256
 
   # This block connects the Lambda to the Default VPC.
@@ -121,4 +121,67 @@ resource "aws_lambda_function_url" "public_url" {
 output "lambda_function_url" {
   description = "The publicly accessible URL for the Lambda function."
   value       = aws_lambda_function_url.public_url.function_url
+}
+
+resource "aws_api_gateway_rest_api" "api" {
+  name = "auto-api"
+}
+
+resource "aws_api_gateway_resource" "path" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  path_part   = "{path}"
+}
+
+resource "aws_api_gateway_method" "proxy" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.path.id
+  http_method   = "GET"
+  authorization = "NONE"
+
+  request_parameters = {
+    "method.request.path.path" = true
+  }
+}
+
+resource "aws_api_gateway_integration" "lambda" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_method.proxy.resource_id
+  http_method = aws_api_gateway_method.proxy.http_method
+
+  integration_http_method = "POST"
+  type                   = "AWS_PROXY"
+  uri                    = aws_lambda_function.auto.invoke_arn
+
+  request_parameters = {
+    "integration.request.path.path" = "method.request.path.path"
+  }
+
+}
+
+resource "aws_api_gateway_deployment" "api" {
+  depends_on = [aws_api_gateway_integration.lambda]
+
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  stage_name  = "prod"
+}
+
+resource "aws_lambda_permission" "api_gw" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.auto.function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
+}
+
+resource "aws_api_gateway_integration_response" "lambda" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_integration.lambda.resource_id
+  http_method = aws_api_gateway_integration.lambda.http_method
+  status_code = "200"
+}
+
+output "api_url" {
+  value = "${aws_api_gateway_deployment.api.invoke_url}/"
 }
