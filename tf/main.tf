@@ -125,6 +125,9 @@ output "lambda_function_url" {
 
 resource "aws_api_gateway_rest_api" "api" {
   name = "auto-api"
+    endpoint_configuration {
+    types = ["REGIONAL"]
+  }
 }
 
 resource "aws_api_gateway_resource" "path" {
