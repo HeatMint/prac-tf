@@ -10,7 +10,8 @@ resource "aws_instance" "web_server" {
     Name = "My_Web_Server_1"
   }
 
-  security_groups = [aws_security_group.web_server_1.name]
+  security_groups = [aws_security_group.web_server_1_internal.name]
+  associate_public_ip_address = false
 
   key_name = "key-pair-2"
 
@@ -111,17 +112,17 @@ resource "aws_lambda_function" "auto" {
   }
 }
 
-# 6. Create the public Function URL.
-resource "aws_lambda_function_url" "public_url" {
-  function_name      = aws_lambda_function.auto.function_name
-  authorization_type = "NONE" # This makes the URL publicly accessible
-}
-
-# 7. Output the generated URL so you can easily access it.
-output "lambda_function_url" {
-  description = "The publicly accessible URL for the Lambda function."
-  value       = aws_lambda_function_url.public_url.function_url
-}
+# # 6. Create the public Function URL.
+# resource "aws_lambda_function_url" "public_url" {
+#   function_name      = aws_lambda_function.auto.function_name
+#   authorization_type = "NONE" # This makes the URL publicly accessible
+# }
+# 
+# # 7. Output the generated URL so you can easily access it.
+# output "lambda_function_url" {
+#   description = "The publicly accessible URL for the Lambda function."
+#   value       = aws_lambda_function_url.public_url.function_url
+# }
 
 resource "aws_api_gateway_rest_api" "api" {
   name = "auto-api"
