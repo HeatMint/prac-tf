@@ -2,30 +2,20 @@ provider "aws" {
   region = "us-east-2"
 }
 
-resource "aws_launch_template" "web_server" {
-  image_id           = "ami-0199d4b5b8b4fde0e"
+resource "aws_instance" "web_server" {
+  ami           = "ami-0199d4b5b8b4fde0e"
   instance_type = "t3.micro"
 
   tags = {
     Name = "My_Web_Server_1"
   }
 
-  vpc_security_group_ids = [aws_security_group.web_server_1_internal.id]
+  security_groups = [aws_security_group.web_server_1_internal.name]
+  associate_public_ip_address = false
 
   key_name = "key-pair-2"
 
-  user_data = filebase64("${path.module}/../scripts/launch_ec2.sh")
-}
-
-resource "aws_instance" "web_server" {
-  launch_template {
-    id      = aws_launch_template.web_server.id
-    version = "$Latest"
-  }
-
-  tags = {
-    Name = "My_Web_Server_1"
-  }
+  user_data = file("${path.module}/../scripts/launch_ec2.sh")
 }
 
 # 1. Find the default VPC in the selected region.
@@ -127,7 +117,7 @@ resource "aws_lambda_function" "auto" {
 #   function_name      = aws_lambda_function.auto.function_name
 #   authorization_type = "NONE" # This makes the URL publicly accessible
 # }
-#
+# 
 # # 7. Output the generated URL so you can easily access it.
 # output "lambda_function_url" {
 #   description = "The publicly accessible URL for the Lambda function."
