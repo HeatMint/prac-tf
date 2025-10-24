@@ -2,6 +2,21 @@ from flask import Flask, request, Response
 
 app = Flask(__name__)
 
+
+IS_HEALTHY = True
+
+@app.route('/health')
+def health():
+    if IS_HEALTHY:
+        return 'I am Healthy and 200', 200
+    else:
+        return 'I am unhealthy and 500', 500
+
+@app.route('/reversehealth')
+def reverse_health():
+    global IS_HEALTHY
+    IS_HEALTHY = not IS_HEALTHY
+    return f"reversed healthy status to {IS_HEALTHY}", 200
 @app.route('/', defaults={'subpath': ''})
 @app.route('/<path:subpath>')
 def catch_all(subpath):
